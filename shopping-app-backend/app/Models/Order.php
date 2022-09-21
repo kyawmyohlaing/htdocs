@@ -29,4 +29,12 @@ class Order extends Model
     {
         return $this->hasMany(OrderDetail::class);
     }
+     public function scopeNotpos($query)
+    {
+        return $query->where('order_type', '<>', 'pos');
+    }
+     public function user()
+    {
+        return $this->belongsTod(User::class, 'user_id');
+    }
 }

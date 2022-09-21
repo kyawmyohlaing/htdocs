@@ -53,4 +53,39 @@ class ConfigController extends Controller
         //return response()->json(['message'=>trans('messages.we_are_temporarily_unavailable_in_this_area')], 403);
          return response()->json(['zone_id'=>1], 200);
     }
+    public function configuration(){
+        return response()->json([
+            'business_name'=> BusinessSetting::where(['key'=> 'business_name'])->first()->value,
+            'base_urls'=> ['customer_image_url'=> asset('storage/profile'),
+            'business_logo_url'=>asset('storage/business')
+            ],
+            'country'=> BusinessSetting::where(['key'=>'country'])->first()->value,
+            'default_location'=> ['lat'=>'23.757989', 'lng'=>'90.360587'],
+            ]);
+    }
+    public function place_api_autocomplete(Resquest $request){
+        $validator = Validator::make($request->all(),['search_text'=> 'required',]);
+
+        if($validator->errors()->count()>0){
+            return response()->json(
+                ['error'=> Helpers::error_processor($validator)],403);
+            
+        }
+        $response= Http::get('https://maps.googleapis.com/maps/api/place/autocomplete/json?input='.$request['search_text']
+        .'&key='.'AIzaSyCMESvjp3G5FtPnukZ28_GVOuFSvEhSS9c');
+        return $response->json();
+    }
+
+    public function place_api_details(Resquest $request){
+        $validator = Validator::make($request->all(),['placeid'=> 'required',]);
+
+        if($validator->errors()->count()>0){
+            return response()->json(
+                ['error'=> Helpers::error_processor($validator)],403);
+            
+        }
+        $response= Http::get('https://maps.googleapis.com/maps/api/place/details/json?placeid='.$request['placeid']
+        .'&key='.'AIzaSyCMESvjp3G5FtPnukZ28_GVOuFSvEhSS9c');
+        return $response->json();
+    }
 }
