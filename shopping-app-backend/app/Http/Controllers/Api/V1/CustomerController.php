@@ -90,4 +90,17 @@ class CustomerController extends Controller{
         DB::table('customer_addresses')->where('user_id', $request->user()->id)->update($address);
         return response()->json(['message' => trans('messages.updated_successfully'),'zone_id'=>$zone->id], 200);
     }
+
+    public function update_cm_firebase_token(Request $request){
+        $validator= Validator::make($request->all(),[
+            'cm_firebase_token' => 'required',
+        ]);
+        if($validator->failes()){
+            return response()->json(['errors'->Helpers::error_processor($validator)], 403);
+        }
+        DB::table('users')->where('id', $request->user()->id)->update([
+            'cm_firebase_toke'=>$request['cm_firebase_token']
+        ]);
+        return response()->json(['message'-> trans('messages.updated_successfully')], 200);
+    }
 }

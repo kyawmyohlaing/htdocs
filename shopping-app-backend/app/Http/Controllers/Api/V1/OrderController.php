@@ -45,7 +45,31 @@ class OrderController extends Controller
         $order->pending = now(); //checked
         $order->created_at = now(); //checked
         $order->updated_at = now();//checked
+        $order->order_type =$request['order_type'];
+
+        /*
+            newly added
+        */
+
+        $order->payment_status= $request['payment_method']=='wallet'?'paid':'unpaid';
+        $order->order_status= $request['payment_method']=='digital_payment'?'failed':
+        ($request->payment_method == 'wallet'?'confirmed':'pending');
+        $order->payment_method= $request->payment_method;
+
         
+        $scheduled_at = $request->scheduled_at?\Carbon\Carbon::parse($request->scheduled_at):now();
+        if($request->scheduled_at && $scheduled_at< now())
+        {
+            return response()->json([
+                'errors'=>[
+                    ['code'=> 'order_time', 'message'=> trans('messages.you_can_not_schedule_a_order_in_past')]
+                ]
+                ], 406);
+        }
+
+        $order-> scheduled_at = $scheduled_at;
+        $order-> shceduled= $request->scheduled_at?1:0;
+
         foreach ($request['cart'] as $c) {
      
                 $product = Food::find($c['id']); //checked
@@ -76,6 +100,8 @@ class OrderController extends Controller
 
 
         try {
+             $status= OrderTrack::where('order_status',$order->order_status)->first();
+             $order->status_id=$status->id;
             $save_order= $order->id;
             $total_price= $product_price;
             $order->order_amount = $total_price;
@@ -89,7 +115,8 @@ class OrderController extends Controller
             insert method is part of query builder
             */
             OrderDetail::insert($order_details);
-
+            /*newly added for sending notification*/
+            Helpers::send_order_notification($order, $request->user()->cm_firebase_token);
             return response()->json([
                 'message' => trans('messages.order_placed_successfully'),
                 'order_id' =>  $save_order,
